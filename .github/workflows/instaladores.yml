@@ -1,0 +1,45 @@
+# Gera os instaladores/pacotes do modo local para Windows, macOS e Linux.
+# Dispare manualmente (Actions > Instaladores > Run workflow) ou crie uma tag "v0.2.0".
+name: Instaladores
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: npm ci
+      - run: npm test
+      - run: npm run empacotar
+      - run: choco install innosetup -y --no-progress
+      - name: Compilar instalador
+        shell: pwsh
+        run: |
+          $v = (Get-Content package.json | ConvertFrom-Json).version
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DVersao=$v" instalador\sipsi.iss
+      - uses: actions/upload-artifact@v4
+        with: { name: instalador-windows, path: dist/Sipsi-Instalador-*.exe }
+
+  unix:
+    strategy:
+      fail-fast: false
+      matrix:
+        # macos-15-intel = Mac Intel; macos-latest = Mac Apple Silicon (confira se os nomes ainda existem)
+        os: [macos-15-intel, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: npm ci
+      - run: npm test
+      - run: npm run empacotar
+      - name: Compactar
+        run: cd dist && for d in sipsi-*; do tar -czf "$d.tar.gz" "$d"; done
+      - uses: actions/upload-artifact@v4
+        with: { name: "pacote-${{ matrix.os }}", path: dist/*.tar.gz }
