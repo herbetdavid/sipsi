@@ -38,13 +38,13 @@ export async function gerarSeedSql(pepper: string, agora: Date = new Date()): Pr
   sql.push(linha("psicologo", { id: 1, nome: "Dra. Carla Menezes", crp: "06/123456", email: "carla@clinica.com", ativo: 1 }));
 
   const senha = await hashSenha("123456", pepper);
-  const usuarios: [number, string, string, string, number | null][] = [
-    [1, "Admin da Clínica", "admin@clinica.com", "admin", null],
-    [2, "Ana (Recepção)", "recepcao@clinica.com", "recepcao", null],
-    [3, "Dra. Carla Menezes", "carla@clinica.com", "psicologo", 1],
+  const usuarios: [number, string, string, string, string | null, number | null][] = [
+    [1, "Admin da Clínica", "admin", "admin@clinica.com", "admin", null],
+    [2, "Ana (Recepção)", "recepcao", "recepcao@clinica.com", "recepcao", null],
+    [3, "Dra. Carla Menezes", "carla", "carla@clinica.com", "psicologo", 1],
   ];
-  for (const [id, nome, email, papel, psicologo_id] of usuarios) {
-    sql.push(linha("usuario", { id, nome, email, senha_hash: senha, papel, ativo: 1, psicologo_id, criado_em: ts }));
+  for (const [id, nome, login, email, papel, psicologo_id] of usuarios) {
+    sql.push(linha("usuario", { id, nome, login, email, senha_hash: senha, papel, ativo: 1, psicologo_id, criado_em: ts }));
   }
 
   // CPFs fictícios com dígitos verificadores válidos.
@@ -122,5 +122,5 @@ if (direto) {
   }
   const { writeFileSync } = await import("node:fs");
   writeFileSync("seed-demo.sql", await gerarSeedSql(pepper));
-  console.log("Gerado: seed-demo.sql  (usuários: admin@clinica.com, recepcao@clinica.com, carla@clinica.com | senha: 123456)");
+  console.log("Gerado: seed-demo.sql  (usuários: admin, recepcao, carla | senha: 123456)");
 }

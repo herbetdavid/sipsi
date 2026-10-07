@@ -3,3 +3,6 @@
 DATABASE_URL=postgresql://USUARIO:SENHA@ep-xxxx.sa-east-1.aws.neon.tech/sipsi?sslmode=require
 PASSWORD_PEPPER=troque-por-um-valor-longo-e-aleatorio
 MODO_DEMO=1
+
+# Libera /primeiro-acesso apenas enquanto não houver usuários (mín. 20 caracteres)
+SETUP_TOKEN=codigo-de-configuracao-bem-longo

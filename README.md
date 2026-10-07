@@ -104,18 +104,21 @@ DATABASE_URL=... npm run sql -- seed-demo.sql                    # SOMENTE banco
 npm run dev                                                      # http://localhost:8787 (senha dos usuários demo: 123456)
 ```
 
+## Primeiro acesso pelo navegador
+
+Para criar o primeiro administrador sem usar o terminal, configure o segredo `SETUP_TOKEN` na Cloudflare com pelo menos 20 caracteres e acesse `/primeiro-acesso`. Informe um **nome de usuário** (3–50 caracteres, letras/números/ponto/hífen/sublinhado), senha e, se quiser, e-mail. Depois da criação do primeiro usuário, a rota deixa de existir.
+
 ## Publicar
 
 ```bash
 npx wrangler login
 npx wrangler secret put DATABASE_URL         # string de conexão do Neon (papel do app)
-npx wrangler secret put PASSWORD_PEPPER      # use o MESMO valor ao rodar criar-usuario
+npx wrangler secret put PASSWORD_PEPPER      # use o MESMO valor ao criar usuários
+npx wrangler secret put SETUP_TOKEN           # opcional: habilita /primeiro-acesso temporariamente
 DATABASE_URL='<conexão do dono>' npm run db:migrar
 
-# primeiro administrador — ALTERNATIVA sem linha de comando: defina o segredo SETUP_TOKEN e abra /primeiro-acesso
-# (a página só existe enquanto não houver nenhum usuário; remova o SETUP_TOKEN depois). Pela linha de comando:
-# (a senha não é gravada em arquivo)
-DATABASE_URL=... PASSWORD_PEPPER=... USUARIO_EMAIL=voce@clinica.com USUARIO_NOME="Seu Nome" \
+# primeiro administrador (a senha não é gravada em arquivo)
+DATABASE_URL=... PASSWORD_PEPPER=... USUARIO_LOGIN=admin USUARIO_EMAIL=voce@clinica.com USUARIO_NOME="Seu Nome" \
 USUARIO_SENHA='uma-senha-longa' npm run usuario:criar
 
 # psicólogos (ainda não há tela de cadastro)
@@ -129,7 +132,7 @@ npm run deploy
 
 ## O que foi verificado e o que não foi
 
-Executado e passando (49 testes: `npm test`; `npm run typecheck`): unidades e **ponta a ponta pelo `fetch()` do Worker
+Executado e passando (42 testes: `npm test`; `npm run typecheck`): unidades e **ponta a ponta pelo `fetch()` do Worker
 sobre PostgreSQL real em processo (PGlite)** com as mesmas migrações: login, bloqueio por tentativas, CSRF, RBAC, XSS,
 regras de negócio (Agenda → Financeiro em transação única, NFS-e, questionários), cadeia de hash do prontuário, triggers
 (inclusive TRUNCATE), auditoria, PDFs. Bundle (wrangler `--dry-run`): ~296 KB comprimido.
@@ -172,7 +175,7 @@ Espera de rede com o Neon não conta como CPU.
 - Sessão por cookie `HttpOnly; SameSite=Lax; Secure`; o banco guarda só o **hash** do token; 12 h de validade; logout invalida no servidor.
 - **CSRF**: POST exige mesma origem (`Sec-Fetch-Site`/`Origin`) **e** token ligado à sessão.
 - **CSP restritiva** (sem scripts), `X-Frame-Options: DENY`, `nosniff`, `Cache-Control: no-store`, HSTS.
-- Login: mesma resposta para e-mail inexistente e senha errada (com custo de hash equivalente), bloqueio após 5 falhas/15 min por e-mail e 30 por IP, `?next=` só aceita caminho interno.
+- Login: mesma resposta para usuário inexistente e senha errada (com custo de hash equivalente), bloqueio após 5 falhas/15 min por usuário e 30 por IP, `?next=` só aceita caminho interno.
 - **Prontuário imutável e verificável**: triggers recusam UPDATE/DELETE; cada entrada inclui o hash da anterior; há tela de verificação da cadeia. O mesmo vale para documentos emitidos e a trilha de auditoria.
 - PDFs gerados sob demanda a partir de um *snapshot* do momento da emissão (nada em disco; o documento não muda se o cadastro mudar).
 - Dinheiro em centavos (inteiros). Datas: registros em UTC, exibidos em horário de Brasília.

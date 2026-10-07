@@ -19,9 +19,6 @@ Aba **Actions → Instaladores → Run workflow**. Ao terminar, baixe o arquivo 
    - `DATABASE_URL` — a string de conexão do Neon (região São Paulo, conexão direta);
    - `PASSWORD_PEPPER` — texto longo e aleatório, guardado no seu gerenciador de senhas.
 4. Crie as tabelas no Neon pelo **SQL Editor**, com `migrations/0001_init.sql` e depois `migrations/0002_imutabilidade.sql`.
-5. Cadastre também o segredo `SETUP_TOKEN` (código seu, 20 caracteres ou mais) e publique. Abra `https://SEU-WORKER.workers.dev/primeiro-acesso`,
-   informe o código, o nome, o e-mail e a senha do administrador. A página só funciona enquanto **não existir nenhum usuário**;
-   depois de criar o administrador, **remova o segredo `SETUP_TOKEN`**.
 
 > A Cloudflare muda os nomes dos menus com frequência; se algo não estiver igual, siga a documentação atual dela.
 

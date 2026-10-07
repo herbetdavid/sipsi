@@ -58,9 +58,9 @@ console.log(`primeira requisição (inclui JIT/inicialização)   ${cpuMs(proces
 await medir("GET  /auth/login (página de login)", () => chamar("GET", "/auth/login"));
 await medir("POST /auth/login (PBKDF2 100k + pepper)", async () => {
   cookie = "";
-  await chamar("POST", "/auth/login", { email: "admin@clinica.com", senha: "123456" });
+  await chamar("POST", "/auth/login", { login: "admin", senha: "123456" });
 }, 10);
-await chamar("POST", "/auth/login", { email: "admin@clinica.com", senha: "123456" });
+await chamar("POST", "/auth/login", { login: "admin", senha: "123456" });
 await chamar("GET", "/");
 await medir("GET  /pacientes (lista, com sessão)", () => chamar("GET", "/pacientes"));
 await medir("GET  /agenda (JOIN de 3 tabelas)", () => chamar("GET", "/agenda"));

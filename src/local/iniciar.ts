@@ -14,6 +14,7 @@
  *   PORT=8787  SIPSI_HOST=127.0.0.1   (0.0.0.0 libera a rede local; exige HTTPS, veja o manual)
  *   SIPSI_PROXY=1           atrás de proxy HTTPS (Caddy): confia em X-Forwarded-*
  *   SIPSI_ABRIR_NAVEGADOR=1 abre o navegador ao iniciar (usado pelos atalhos do instalador)
+ *   USUARIO_LOGIN / USUARIO_NOME / USUARIO_EMAIL / USUARIO_SENHA  primeiro administrador não interativo
  *   MODO_DEMO=1             mostra credenciais de demonstração (só desenvolvimento)
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -26,7 +27,7 @@ import ws from "ws";
 import { abrirLocal } from "./servidor.ts";
 import { migrarPool } from "./migrar.ts";
 import { hashSenha } from "../crypto.ts";
-import { agoraUtc, emailValido } from "../util.ts";
+import { agoraUtc } from "../util.ts";
 
 const env = process.env;
 const dados = env.SIPSI_DADOS ?? "./dados-sipsi";
@@ -70,23 +71,25 @@ async function criarPrimeiroAdmin(consulta: (sql: string, p: unknown[]) => Promi
   if (n > 0) return;
   console.log("\nPrimeira execução: vamos criar o administrador.");
   let nome = env.USUARIO_NOME ?? "";
-  let email = (env.USUARIO_EMAIL ?? "").toLowerCase();
+  let login = (env.USUARIO_LOGIN ?? "").trim().toLowerCase();
+  let email = (env.USUARIO_EMAIL ?? "").trim().toLowerCase();
   let senha = env.USUARIO_SENHA ?? "";
-  if (!process.stdin.isTTY && !(nome && email && senha)) {
-    console.log("Sem terminal interativo: defina USUARIO_NOME, USUARIO_EMAIL e USUARIO_SENHA, ou rode no terminal.");
+  if (!process.stdin.isTTY && !(nome && login && senha)) {
+    console.log("Sem terminal interativo: defina USUARIO_NOME, USUARIO_LOGIN e USUARIO_SENHA, ou rode no terminal.");
     process.exit(1);
   }
   while (!nome) nome = await perguntar("Nome do administrador: ");
-  while (!emailValido(email)) email = (await perguntar("E-mail (será o login): ")).toLowerCase();
+  while (!/^[A-Za-z0-9._-]{3,50}$/.test(login)) login = (await perguntar("Nome de usuário (será o login): ")).toLowerCase();
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) email = await perguntar("E-mail (opcional): ");
   while (senha.length < 10) {
     senha = await perguntar("Senha (mínimo 10 caracteres, não aparece na tela): ", true);
     if (senha.length < 10) console.log("Senha curta demais.");
   }
   await consulta(
-    "INSERT INTO usuario (nome, email, senha_hash, papel, ativo, criado_em) VALUES ($1, $2, $3, 'admin', 1, $4)",
-    [nome, email, await hashSenha(senha, pepper), agoraUtc()],
+    "INSERT INTO usuario (nome, login, email, senha_hash, papel, ativo, criado_em) VALUES ($1, $2, $3, $4, 'admin', 1, $5)",
+    [nome, login, email || null, await hashSenha(senha, pepper), agoraUtc()],
   );
-  console.log(`Administrador criado: ${email}\n`);
+  console.log(`Administrador criado: ${login}\n`);
 }
 
 const pepper = obterPepper();

@@ -80,9 +80,9 @@ class Cliente {
     return this.req("POST", caminho, { _csrf: this.csrf, ...form });
   }
 
-  async entrar(email: string, senha = "123456"): Promise<Resp> {
+  async entrar(login: string, senha = "123456"): Promise<Resp> {
     await this.get("/auth/login");
-    const r = await this.req("POST", "/auth/login", { email, senha });
+    const r = await this.req("POST", "/auth/login", { login, senha });
     await this.get("/"); // captura o token CSRF
     return r;
   }
@@ -117,9 +117,9 @@ before(async () => {
   admin = new Cliente();
   recepcao = new Cliente();
   psicologa = new Cliente();
-  await admin.entrar("admin@clinica.com");
-  await recepcao.entrar("recepcao@clinica.com");
-  await psicologa.entrar("carla@clinica.com");
+  await admin.entrar("admin");
+  await recepcao.entrar("recepcao");
+  await psicologa.entrar("carla");
 });
 
 // ------------------------------------------------------------------ infraestrutura
@@ -168,14 +168,14 @@ test("sem login: redireciona para /auth/login preservando o destino", async () =
   assert.equal(r.local, "/auth/login?next=%2Fpacientes");
 });
 
-test("login: senha errada e e-mail inexistente dão a MESMA resposta genérica", async () => {
+test("login: senha errada e usuário inexistente dão a MESMA resposta genérica", async () => {
   const a = new Cliente();
-  const errada = await a.req("POST", "/auth/login", { email: "admin@clinica.com", senha: "errada" });
-  const inexistente = await new Cliente().req("POST", "/auth/login", { email: "ninguem@x.com", senha: "errada" });
+  const errada = await a.req("POST", "/auth/login", { login: "admin", senha: "errada" });
+  const inexistente = await new Cliente().req("POST", "/auth/login", { login: "ninguem", senha: "errada" });
   assert.equal(errada.status, 401);
   assert.equal(inexistente.status, 401);
-  assert.match(errada.texto, /E-mail ou senha inválidos/);
-  assert.match(inexistente.texto, /E-mail ou senha inválidos/);
+  assert.match(errada.texto, /Nome de usuário ou senha inválidos/);
+  assert.match(inexistente.texto, /Nome de usuário ou senha inválidos/);
   assert.ok((await um<{ n: number }>("SELECT COUNT(*) n FROM log_auditoria WHERE acao='login_falho'")).n >= 2);
   assert.equal(a.cookies.has("sipsi_sessao"), false);
 });
@@ -187,7 +187,7 @@ test("login ok: cookie HttpOnly + SameSite + Secure; token da sessão não fica 
     new Request(ORIGEM + "/auth/login", {
       method: "POST",
       headers: { Origin: ORIGEM, "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ email: "admin@clinica.com", senha: "123456" }).toString(),
+      body: new URLSearchParams({ login: "admin", senha: "123456" }).toString(),
     }),
     env,
   );
@@ -202,22 +202,22 @@ test("login ok: cookie HttpOnly + SameSite + Secure; token da sessão não fica 
 
 test("login: ?next só aceita caminho interno (anti open-redirect)", async () => {
   const c1 = new Cliente();
-  const ok = await c1.req("POST", "/auth/login", { email: "admin@clinica.com", senha: "123456", next: "/agenda" });
+  const ok = await c1.req("POST", "/auth/login", { login: "admin", senha: "123456", next: "/agenda" });
   assert.equal(ok.local, "/agenda");
   const c2 = new Cliente();
-  const mau = await c2.req("POST", "/auth/login", { email: "admin@clinica.com", senha: "123456", next: "//evil.com" });
+  const mau = await c2.req("POST", "/auth/login", { login: "admin", senha: "123456", next: "//evil.com" });
   assert.equal(mau.local, "/");
 });
 
-test("login: bloqueio após 5 falhas no mesmo e-mail (inclusive com a senha certa)", async () => {
+test("login: bloqueio após 5 falhas no mesmo usuário (inclusive com a senha certa)", async () => {
   // usuário próprio, para não bloquear os demais testes
   await shim.exec(
-    `INSERT INTO usuario (nome, email, senha_hash, papel, criado_em)
-     SELECT 'Teste Limite', 'limite@x.com', senha_hash, 'recepcao', '2026-01-01T00:00:00' FROM usuario WHERE email='admin@clinica.com'`,
+    `INSERT INTO usuario (nome, login, email, senha_hash, papel, criado_em)
+     SELECT 'Teste Limite', 'limite', 'limite@x.com', senha_hash, 'recepcao', '2026-01-01T00:00:00' FROM usuario WHERE login='admin'`,
   );
   const c = new Cliente();
-  for (let i = 0; i < 5; i++) assert.equal((await c.req("POST", "/auth/login", { email: "limite@x.com", senha: "errada" })).status, 401);
-  const bloqueado = await c.req("POST", "/auth/login", { email: "limite@x.com", senha: "123456" });
+  for (let i = 0; i < 5; i++) assert.equal((await c.req("POST", "/auth/login", { login: "limite", senha: "errada" })).status, 401);
+  const bloqueado = await c.req("POST", "/auth/login", { login: "limite", senha: "123456" });
   assert.equal(bloqueado.status, 429);
   assert.match(bloqueado.texto, /Muitas tentativas/);
   assert.equal(c.cookies.has("sipsi_sessao"), false);
@@ -225,21 +225,21 @@ test("login: bloqueio após 5 falhas no mesmo e-mail (inclusive com a senha cert
 
 test("usuário inativo não consegue entrar", async () => {
   await shim.exec(
-    `INSERT INTO usuario (nome, email, senha_hash, papel, ativo, criado_em)
-     SELECT 'Inativo', 'inativo@x.com', senha_hash, 'recepcao', 0, '2026-01-01T00:00:00' FROM usuario WHERE email='admin@clinica.com'`,
+    `INSERT INTO usuario (nome, login, email, senha_hash, papel, ativo, criado_em)
+     SELECT 'Inativo', 'inativo', 'inativo@x.com', senha_hash, 'recepcao', 0, '2026-01-01T00:00:00' FROM usuario WHERE login='admin'`,
   );
-  assert.equal((await new Cliente().req("POST", "/auth/login", { email: "inativo@x.com", senha: "123456" })).status, 401);
+  assert.equal((await new Cliente().req("POST", "/auth/login", { login: "inativo", senha: "123456" })).status, 401);
 });
 
 test("sessão vencida no banco = deslogado", async () => {
   const c = new Cliente();
-  await c.entrar("recepcao@clinica.com");
+  await c.entrar("recepcao");
   assert.equal((await c.get("/pacientes")).status, 200);
   await shim.exec("UPDATE sessao_login SET expira_em = '2000-01-01T00:00:00'");
   assert.equal((await c.get("/pacientes")).status, 303);
-  await admin.entrar("admin@clinica.com"); // restaura as sessões que expiramos acima
-  await recepcao.entrar("recepcao@clinica.com");
-  await psicologa.entrar("carla@clinica.com");
+  await admin.entrar("admin"); // restaura as sessões que expiramos acima
+  await recepcao.entrar("recepcao");
+  await psicologa.entrar("carla");
 });
 
 // ------------------------------------------------------------------------- CSRF
@@ -252,7 +252,7 @@ test("CSRF: POST sem token, com token errado ou de outra origem é recusado", as
   assert.equal(outraOrigem.status, 403);
   const crossSite = await admin.req("POST", "/pacientes/novo", { _csrf: admin.csrf, nome: "Cross Site" }, { "Sec-Fetch-Site": "cross-site" });
   assert.equal(crossSite.status, 403);
-  const semOrigem = await new Cliente().req("POST", "/auth/login", { email: "admin@clinica.com", senha: "123456" }, { Origin: "" });
+  const semOrigem = await new Cliente().req("POST", "/auth/login", { login: "admin", senha: "123456" }, { Origin: "" });
   assert.equal(semOrigem.status, 403, "login também exige mesma origem");
   assert.equal((await um<{ n: number }>("SELECT COUNT(*) n FROM paciente WHERE nome IN ('Sem Token','Token Errado','Origem Errada','Cross Site')")).n, 0);
 });
@@ -714,7 +714,7 @@ test("auditoria: registra acessos sensíveis (quem/o quê/paciente) e só o admi
 // -------------------------------------------------------------------------- logout
 test("logout: encerra a sessão no servidor (cookie roubado deixa de valer)", async () => {
   const c = new Cliente();
-  await c.entrar("recepcao@clinica.com");
+  await c.entrar("recepcao");
   const token = c.cookies.get("sipsi_sessao")!;
   assert.equal((await c.get("/pacientes")).status, 200);
   assert.equal((await c.post("/auth/logout")).status, 303);
@@ -726,9 +726,9 @@ test("logout: encerra a sessão no servidor (cookie roubado deixa de valer)", as
 });
 
 test("modo demo: credenciais só aparecem na tela de login quando MODO_DEMO=1", async () => {
-  assert.ok(!(await new Cliente().get("/auth/login")).texto.includes("admin@clinica.com"));
+  assert.ok(!(await new Cliente().get("/auth/login")).texto.includes("admin / recepcao / carla"));
   const res = await worker.fetch(new Request(ORIGEM + "/auth/login"), { ...env, MODO_DEMO: "1" });
-  assert.ok((await res.text()).includes("admin@clinica.com"));
+  assert.ok((await res.text()).includes("admin / recepcao / carla"));
 });
 
 test("orçamento de consultas: nenhuma requisição chega perto do limite de 50 consultas por invocação (herdado do projeto original)", () => {

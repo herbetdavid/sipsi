@@ -8,7 +8,8 @@ export const TODOS_OS_PAPEIS: Papel[] = ["admin", "psicologo", "recepcao"];
 export interface Usuario {
   id: number;
   nome: string;
-  email: string;
+  login: string;
+  email: string | null;
   papel: Papel;
   psicologo_id: number | null;
 }
@@ -18,7 +19,7 @@ export const SESSAO_HORAS = 12;
 
 // Limites de tentativas malsucedidas por janela de 15 minutos.
 export const JANELA_MIN = 15;
-export const MAX_FALHAS_POR_EMAIL = 5;
+export const MAX_FALHAS_POR_LOGIN = 5;
 export const MAX_FALHAS_POR_IP = 30;
 
 function somarHoras(isoUtc: string, horas: number): string {
@@ -46,7 +47,7 @@ export async function usuarioDaSessao(db: Banco, token: string, agora: string): 
   if (!token || token.length > 100) return null;
   const linha = await db
     .prepare(
-      `SELECT u.id, u.nome, u.email, u.papel, u.psicologo_id
+      `SELECT u.id, u.nome, u.login, u.email, u.papel, u.psicologo_id
          FROM sessao_login s JOIN usuario u ON u.id = s.usuario_id
         WHERE s.id_hash = ? AND s.expira_em > ? AND u.ativo = 1`,
     )
@@ -64,22 +65,22 @@ export async function tokenCsrf(tokenSessao: string): Promise<string> {
   return paraHex(await hmacSha256(utf8(tokenSessao), utf8("sipsi-csrf-v1")));
 }
 
-export async function tentativasBloqueadas(db: Banco, email: string, ip: string, agora: string): Promise<boolean> {
+export async function tentativasBloqueadas(db: Banco, login: string, ip: string, agora: string): Promise<boolean> {
   const desde = subtrairMinutos(agora, JANELA_MIN);
   const r = await db
     .prepare(
       `SELECT
-         (SELECT COUNT(*) FROM login_tentativa WHERE email = ? AND criado_em >= ?) AS por_email,
+         (SELECT COUNT(*) FROM login_tentativa WHERE email = ? AND criado_em >= ?) AS por_login,
          (SELECT COUNT(*) FROM login_tentativa WHERE ip = ? AND criado_em >= ?) AS por_ip`,
     )
-    .bind(email, desde, ip, desde)
+    .bind(login, desde, ip, desde)
     .first<{ por_email: number; por_ip: number }>();
-  return (r?.por_email ?? 0) >= MAX_FALHAS_POR_EMAIL || (r?.por_ip ?? 0) >= MAX_FALHAS_POR_IP;
+  return (r?.por_login ?? 0) >= MAX_FALHAS_POR_LOGIN || (r?.por_ip ?? 0) >= MAX_FALHAS_POR_IP;
 }
 
-export async function registrarFalhaDeLogin(db: Banco, email: string, ip: string, agora: string): Promise<void> {
+export async function registrarFalhaDeLogin(db: Banco, login: string, ip: string, agora: string): Promise<void> {
   await db.batch([
-    db.prepare("INSERT INTO login_tentativa (email, ip, criado_em) VALUES (?, ?, ?)").bind(email, ip, agora),
+    db.prepare("INSERT INTO login_tentativa (email, ip, criado_em) VALUES (?, ?, ?)").bind(login, ip, agora),
     db.prepare("DELETE FROM login_tentativa WHERE criado_em < ?").bind(subtrairMinutos(agora, 24 * 60)),
   ]);
 }
