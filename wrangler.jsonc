@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sipsi",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  // Necessário para o driver "pg" usado com o Hyperdrive.
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "vars": {
+    // "1" mostra, na tela de login, as credenciais de demonstração. Mantenha "0" em produção.
+    "MODO_DEMO": "0"
+  }
+  // ── Escolha UMA forma de ligar ao Neon ─────────────────────────────────────────────
+  // A) Hyperdrive (recomendado): crie a configuração e cole o id aqui (descomente):
+  //      npx wrangler hyperdrive create sipsi-neon --caching-disabled --connection-string="postgresql://..."
+  //    "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "COLE_O_ID_AQUI" }]
+  //    Mantenha o cache DESLIGADO (--caching-disabled): são dados de saúde e leituras logo após gravações.
+  // B) Sem Hyperdrive: segredo DATABASE_URL (driver serverless do Neon, WebSocket):
+  //      npx wrangler secret put DATABASE_URL
+  // Em ambos: npx wrangler secret put PASSWORD_PEPPER
+}

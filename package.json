@@ -1,0 +1,39 @@
+{
+  "name": "sipsi",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Sipsi — gestão clínica e administrativa para consultórios de psicologia. Cloudflare Workers + Neon (PostgreSQL, São Paulo).",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.local.json",
+    "test": "node --test test/*.test.ts",
+    "seed:gerar": "tsx scripts/gerar-seed-demo.ts",
+    "usuario:criar": "tsx scripts/criar-usuario.ts",
+    "bench": "node test/bench-cpu.ts",
+    "db:migrar": "tsx scripts/migrar.ts",
+    "sql": "tsx scripts/executar-sql.ts",
+    "local": "tsx src/local/iniciar.ts",
+    "empacotar": "node scripts/empacotar.ts"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@neondatabase/serverless": "^1.2.0",
+    "pdf-lib": "^1.17.1",
+    "pg": "^8.23.1",
+    "ws": "^8.22.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite-socket": "^0.2.11",
+    "@types/pg": "^8.23.1",
+    "@types/ws": "^8.18.2",
+    "pdfjs-dist": "^5.6.0",
+    "tsx": "^4.19.0",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.0.0"
+  },
+  "engines": {
+    "node": ">=22.18"
+  }
+}

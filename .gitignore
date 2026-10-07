@@ -1,0 +1,8 @@
+node_modules/
+.wrangler/
+.dev.vars
+seed-demo.sql
+usuario-novo.sql
+dados-sipsi/
+segredo-sipsi.txt
+dist/

@@ -1,0 +1,5 @@
+# Copie para .dev.vars (não versionado) para rodar localmente com `wrangler dev`.
+# Crie o projeto no Neon escolhendo a região "AWS South America (São Paulo)" — não dá para mudar depois.
+DATABASE_URL=postgresql://USUARIO:SENHA@ep-xxxx.sa-east-1.aws.neon.tech/sipsi?sslmode=require
+PASSWORD_PEPPER=troque-por-um-valor-longo-e-aleatorio
+MODO_DEMO=1
