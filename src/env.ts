@@ -40,6 +40,8 @@ export interface Env {
   DB?: Banco;
   /** Segredo misturado à senha (HMAC) antes do PBKDF2. Obrigatório. */
   PASSWORD_PEPPER?: string;
+  /** Código que libera a tela /primeiro-acesso (só funciona enquanto não existir nenhum usuário). Mín. 20 caracteres. */
+  SETUP_TOKEN?: string;
   /** "1" exibe credenciais de demonstração na tela de login. */
   MODO_DEMO?: string;
 }

@@ -9,6 +9,7 @@ import { COOKIE_SESSAO, tokenCsrf, usuarioDaSessao } from "./auth.ts";
 import { igualConstante } from "./crypto.ts";
 import { paginaErroSimples } from "./views.ts";
 import { registrarRotasAuth } from "./routes/auth.ts";
+import { registrarRotasSetup } from "./routes/setup.ts";
 import { registrarRotasPacientes } from "./routes/pacientes.ts";
 import { registrarRotasAgenda } from "./routes/agenda.ts";
 import { registrarRotasProntuario } from "./routes/prontuario.ts";
@@ -26,6 +27,7 @@ const TAMANHO_MAX_CORPO = 200_000; // bytes
 const router = new Router();
 registrarRotasInicio(router);
 registrarRotasAuth(router);
+registrarRotasSetup(router);
 registrarRotasPacientes(router);
 registrarRotasAgenda(router);
 registrarRotasProntuario(router);

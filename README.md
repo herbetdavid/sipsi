@@ -112,7 +112,9 @@ npx wrangler secret put DATABASE_URL         # string de conexão do Neon (papel
 npx wrangler secret put PASSWORD_PEPPER      # use o MESMO valor ao rodar criar-usuario
 DATABASE_URL='<conexão do dono>' npm run db:migrar
 
-# primeiro administrador (a senha não é gravada em arquivo)
+# primeiro administrador — ALTERNATIVA sem linha de comando: defina o segredo SETUP_TOKEN e abra /primeiro-acesso
+# (a página só existe enquanto não houver nenhum usuário; remova o SETUP_TOKEN depois). Pela linha de comando:
+# (a senha não é gravada em arquivo)
 DATABASE_URL=... PASSWORD_PEPPER=... USUARIO_EMAIL=voce@clinica.com USUARIO_NOME="Seu Nome" \
 USUARIO_SENHA='uma-senha-longa' npm run usuario:criar
 
@@ -127,7 +129,7 @@ npm run deploy
 
 ## O que foi verificado e o que não foi
 
-Executado e passando (42 testes: `npm test`; `npm run typecheck`): unidades e **ponta a ponta pelo `fetch()` do Worker
+Executado e passando (49 testes: `npm test`; `npm run typecheck`): unidades e **ponta a ponta pelo `fetch()` do Worker
 sobre PostgreSQL real em processo (PGlite)** com as mesmas migrações: login, bloqueio por tentativas, CSRF, RBAC, XSS,
 regras de negócio (Agenda → Financeiro em transação única, NFS-e, questionários), cadeia de hash do prontuário, triggers
 (inclusive TRUNCATE), auditoria, PDFs. Bundle (wrangler `--dry-run`): ~296 KB comprimido.
